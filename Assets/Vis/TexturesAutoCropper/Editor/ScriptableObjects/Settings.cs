@@ -38,6 +38,7 @@ namespace Vis.TextureAutoCropper
         public bool RewriteOriginal;
         public string CroppedFileNamingSchema = "-cropped";
 
+        public float AlphaThreshold = 0f;
         //public FileFormat FormatFilter = FileFormat.All;
         public FileFormat EncodeTo = FileFormat.All;
 

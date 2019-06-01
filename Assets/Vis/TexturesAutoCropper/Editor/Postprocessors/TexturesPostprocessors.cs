@@ -49,13 +49,15 @@ namespace Vis.TextureAutoCropper
             var left = 0;
             var right = 0;
 
+            var alphaThresholdCache = settings.AlphaThreshold;
+
             for (int y = 0; y < texture.height; y++)
             {
                 top = y;
                 for (int x = 0; x < texture.width; x++)
                 {
                     var pixel = texture.GetPixel(x, y);
-                    if (pixel.a > 0f)
+                    if (pixel.a > alphaThresholdCache)
                         goto checkLeft;
                 }
             }
@@ -70,7 +72,7 @@ namespace Vis.TextureAutoCropper
                 for (int y = top; y < texture.height; y++)
                 {
                     var pixel = texture.GetPixel(x, y);
-                    if (pixel.a > 0f)
+                    if (pixel.a > alphaThresholdCache)
                         goto checkBottom;
                 }
             }
@@ -85,7 +87,7 @@ namespace Vis.TextureAutoCropper
                 for (int x = left; x < texture.width; x++)
                 {
                     var pixel = texture.GetPixel(x, y);
-                    if (pixel.a > 0f)
+                    if (pixel.a > alphaThresholdCache)
                         goto checkRight;
                 }
             }
@@ -100,7 +102,7 @@ namespace Vis.TextureAutoCropper
                 for (int y = top; y < bottom; y++)
                 {
                     var pixel = texture.GetPixel(x, y);
-                    if (pixel.a > 0f)
+                    if (pixel.a > alphaThresholdCache)
                         goto crop;
                 }
             }

@@ -15,7 +15,8 @@ MonoBehaviour:
   CropAutomatically: 1
   RewriteOriginal: 0
   CroppedFileNamingSchema: -cropped
-  EncodeTo: 2
+  AlphaThreshold: 0
+  EncodeTo: 1
   Padding:
     x: 0
     y: 0

@@ -88,14 +88,49 @@ namespace Vis.TextureAutoCropper
                 EditorGUILayout.HelpBox("Naming schema for cropped files can contain symbols a-zA-Z0-9-_. that will be added to original file's name.", MessageType.Info);
             }
 
-            var newPadding = EditorGUILayout.RectIntField(new GUIContent("Padding:", "How much space should be left uncropped from each side?"), settings.Padding);
-            if (!newPadding.Equals(settings.Padding))
+            var newAlphaThreshold = EditorGUILayout.Slider(new GUIContent("Alpha Threshold", "Alpha value less or equal than this will be considered transparent and ready for crop."), settings.AlphaThreshold, 0f, 1f);
+            if (newAlphaThreshold != settings.AlphaThreshold)
             {
-                Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
-                settings.Padding = newPadding;
+                Undo.RecordObject(settings, "TextureAutoCropper - Alpha Threshold changed");
+                settings.AlphaThreshold = newAlphaThreshold;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
+
+            var topLeftPadding = new Vector2Int(settings.Padding.x, settings.Padding.y);
+            var newTopLeftPadding = EditorGUILayout.Vector2IntField(new GUIContent("Top Left padding: "), topLeftPadding);
+            if (newTopLeftPadding != topLeftPadding)
+            {
+                var newPaddingRect = settings.Padding;
+                newPaddingRect.x = newTopLeftPadding.x;
+                newPaddingRect.y = newTopLeftPadding.y;
+
+                Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
+                settings.Padding = newPaddingRect;
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+            }
+            var bottomRightPadding = new Vector2Int(settings.Padding.width, settings.Padding.height);
+            var newBottomRightPadding = EditorGUILayout.Vector2IntField(new GUIContent("Bottom Right padding: "), bottomRightPadding);
+            if (newBottomRightPadding != bottomRightPadding)
+            {
+                var newPaddingRect = settings.Padding;
+                newPaddingRect.width = newBottomRightPadding.x;
+                newPaddingRect.height = newBottomRightPadding.y;
+
+                Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
+                settings.Padding = newPaddingRect;
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+            }
+            //var newPadding = EditorGUILayout.RectIntField(new GUIContent("Padding:", "How much space should be left uncropped from each side?"), settings.Padding);
+            //if (!newPadding.Equals(settings.Padding))
+            //{
+            //    Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
+            //    settings.Padding = newPadding;
+            //    EditorUtility.SetDirty(settings);
+            //    AssetDatabase.SaveAssets();
+            //}
 
             var encodeTo = (FileFormat)EditorGUILayout.EnumPopup(new GUIContent("Encode cropped to", "You may choose for cropped images in wich format to encode. \"All\" means to keep original format."), settings.EncodeTo);
             if (encodeTo != settings.EncodeTo)
@@ -109,6 +144,9 @@ namespace Vis.TextureAutoCropper
             EditorGUI.indentLevel--;
 
 
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Manual Cropping", settings.Skin.GetStyle("Caption"));
             EditorGUILayout.Space();
@@ -143,6 +181,9 @@ namespace Vis.TextureAutoCropper
                 TexturesPostprocessors.Crop(texture, absolutePath, settings);
                 DestroyImmediate(texture);
             }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
             _manualCroppedFolder = (DefaultAsset)EditorGUILayout.ObjectField(new GUIContent("Folder with textures: ", "Crop all textures inside that folder"), _manualCroppedFolder, typeof(DefaultAsset), false);
             if (_manualCroppedTexture != null)
