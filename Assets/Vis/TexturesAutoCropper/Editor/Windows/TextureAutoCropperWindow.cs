@@ -41,6 +41,7 @@ namespace Vis.TextureAutoCropper
             {
                 Undo.RecordObject(settings, "TextureAutoCropper - Crop automatically option changed");
                 settings.CropAutomatically = newAutoCrop;
+                EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
 
@@ -49,6 +50,7 @@ namespace Vis.TextureAutoCropper
             {
                 Undo.RecordObject(settings, "TextureAutoCropper - Rewrite original option changed");
                 settings.RewriteOriginal = newRewriteOriginal;
+                EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
 
@@ -61,6 +63,7 @@ namespace Vis.TextureAutoCropper
                 {
                     Undo.RecordObject(settings, "TextureAutoCropper - Cropped file naming schema changed");
                     settings.CroppedFileNamingSchema = newCroppedFileNamingSchema;
+                    EditorUtility.SetDirty(settings);
                     AssetDatabase.SaveAssets();
                 }
                 //if (newCroppedFileNamingSchema.Length == 0)
@@ -73,6 +76,7 @@ namespace Vis.TextureAutoCropper
             {
                 Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
                 settings.Padding = newPadding;
+                EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
 
