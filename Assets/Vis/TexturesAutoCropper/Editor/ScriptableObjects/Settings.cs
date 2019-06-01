@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Vis.TextureAutoCropper
 {
-    internal class Settings : ScriptableObject
+    public class Settings : ScriptableObject
     {
         private const string _pointerToDbName = "TexturesAutoCropperDBFolderPointer";
         private const string _settingsFileName = "TexturesAutoCropperSettings.asset";
@@ -34,12 +34,12 @@ namespace Vis.TextureAutoCropper
             return _settingsCache;
         }
 
-        internal bool CropAutomatically = true;
-        internal bool RewriteOriginal;
-        internal string CroppedFileNamingSchema = "-cropped";
+        public bool CropAutomatically = true;
+        public bool RewriteOriginal;
+        public string CroppedFileNamingSchema = "-cropped";
 
-        internal RectInt Padding;
+        public RectInt Padding;
 
-        internal GUISkin Skin;
+        public GUISkin Skin;
     }
 }

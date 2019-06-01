@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Vis.TextureAutoCropper
 {
-    internal class TextureAutoCropperWindow : EditorWindow
+    public class TextureAutoCropperWindow : EditorWindow
     {
         [MenuItem("Vis/Texture Auto Cropper")]
         private static void ShowWindow()
@@ -93,15 +93,16 @@ namespace Vis.TextureAutoCropper
             if (_manualCroppedTexture != null && GUILayout.Button("Crop"))
             {
                 var relativePath = AssetDatabase.GetAssetPath(_manualCroppedTexture);
-                var applicationPath = Application.dataPath;
-                var absolutePath = Path.Combine(applicationPath.Substring(0, applicationPath.Length - TexturesPostprocessors.AssetsFolderName.Length), relativePath);
+                var absolutePath = TexturesPostprocessors.GetAbsolutePathByRelative(relativePath);
 
                 if (!TexturesPostprocessors.CropedPaths.Contains(relativePath))
                     TexturesPostprocessors.CropedPaths.Add(relativePath);
-                var originalReadable = setReadable(relativePath);
-                TexturesPostprocessors.Crop(_manualCroppedTexture, absolutePath, settings);
-                setReadable(relativePath, originalReadable);
-                _manualCroppedTexture = null;
+                var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
+                var bytes = File.ReadAllBytes(absolutePath);
+                texture.LoadImage(bytes);
+                Debug.Log($"manual texture resolution = {texture.width}x{texture.height}");
+                TexturesPostprocessors.Crop(texture, absolutePath, settings);
+                DestroyImmediate(texture);
             }
 
 

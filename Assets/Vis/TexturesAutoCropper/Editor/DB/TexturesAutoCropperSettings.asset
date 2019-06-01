@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 626ab18b01c51bb45a205233a239d19f, type: 3}
   m_Name: TexturesAutoCropperSettings
   m_EditorClassIdentifier: 
-  RewriteOriginal: 1
+  CropAutomatically: 1
+  RewriteOriginal: 0
   CroppedFileNamingSchema: -cropped
   Padding:
     x: 0
