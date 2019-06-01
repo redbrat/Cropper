@@ -38,6 +38,9 @@ namespace Vis.TextureAutoCropper
         public bool RewriteOriginal;
         public string CroppedFileNamingSchema = "-cropped";
 
+        //public FileFormat FormatFilter = FileFormat.All;
+        public FileFormat EncodeTo = FileFormat.All;
+
         public RectInt Padding;
 
         public GUISkin Skin;

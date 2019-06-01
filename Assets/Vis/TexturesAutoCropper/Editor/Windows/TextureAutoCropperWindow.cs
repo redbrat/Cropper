@@ -17,6 +17,7 @@ namespace Vis.TextureAutoCropper
 
         private Texture2D _manualCroppedTexture;
         private DefaultAsset _manualCroppedFolder;
+        private bool _showWrongFileFormatError;
         private bool _cropFolderRecursively;
 
         private void OnGUI()
@@ -48,6 +49,18 @@ namespace Vis.TextureAutoCropper
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
+
+            //if (newAutoCrop)
+            //{
+            //    var newFormatFilter = (FileFormat)EditorGUILayout.EnumPopup(new GUIContent("Applied file format", "Which file formats must be cropped automatically?"), settings.FormatFilter);
+            //    if (newFormatFilter != settings.FormatFilter)
+            //    {
+            //        Undo.RecordObject(settings, "TextureAutoCropper - Applied formats changed");
+            //        settings.FormatFilter = newFormatFilter;
+            //        EditorUtility.SetDirty(settings);
+            //        AssetDatabase.SaveAssets();
+            //    }
+            //}
 
             var newRewriteOriginal = EditorGUILayout.Toggle("Rewrite original file", settings.RewriteOriginal);
             if (newRewriteOriginal != settings.RewriteOriginal)
@@ -84,6 +97,15 @@ namespace Vis.TextureAutoCropper
                 AssetDatabase.SaveAssets();
             }
 
+            var encodeTo = (FileFormat)EditorGUILayout.EnumPopup(new GUIContent("Encode cropped to", "You may choose for cropped images in wich format to encode. \"All\" means to keep original format."), settings.EncodeTo);
+            if (encodeTo != settings.EncodeTo)
+            {
+                Undo.RecordObject(settings, "TextureAutoCropper - Encode format changed");
+                settings.EncodeTo = encodeTo;
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+            }
+
             EditorGUI.indentLevel--;
 
 
@@ -97,7 +119,16 @@ namespace Vis.TextureAutoCropper
             {
                 if (!AssetDatabase.IsForeignAsset(_manualCroppedTexture))
                     _manualCroppedTexture = null;
+                else if (!TexturesPostprocessors.ExtensionFits(AssetDatabase.GetAssetPath(_manualCroppedTexture), FileFormat.Png))
+                {
+                    _showWrongFileFormatError = true;
+                    _manualCroppedTexture = null;
+                }
+                else
+                    _showWrongFileFormatError = false;
             }
+            if (_showWrongFileFormatError)
+                EditorGUILayout.HelpBox($"Currently only .PNG file format supported for cropping.", MessageType.Error);
             if (_manualCroppedTexture != null && GUILayout.Button("Crop"))
             {
                 var relativePath = AssetDatabase.GetAssetPath(_manualCroppedTexture);
@@ -108,7 +139,7 @@ namespace Vis.TextureAutoCropper
                 var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
                 var bytes = File.ReadAllBytes(absolutePath);
                 texture.LoadImage(bytes);
-                Debug.Log($"manual texture resolution = {texture.width}x{texture.height}");
+                //Debug.Log($"manual texture resolution = {texture.width}x{texture.height}");
                 TexturesPostprocessors.Crop(texture, absolutePath, settings);
                 DestroyImmediate(texture);
             }
@@ -130,7 +161,7 @@ namespace Vis.TextureAutoCropper
                     cropDirectory(absolutePath, _cropFolderRecursively, settings);
                 }
             }
-            
+
 
 
             EditorGUI.indentLevel--;
@@ -140,7 +171,7 @@ namespace Vis.TextureAutoCropper
 
         private void cropDirectory(string directory, bool recursively, Settings settings)
         {
-            var allImages = Directory.GetFiles(directory).Where(p => Path.HasExtension(p) && Path.GetExtension(p) == ".png").ToArray();
+            var allImages = Directory.GetFiles(directory).Where(p => Path.HasExtension(p) && TexturesPostprocessors.ExtensionFits(p, FileFormat.Png)).ToArray();
 
             for (int i = 0; i < allImages.Length; i++)
             {
@@ -155,7 +186,7 @@ namespace Vis.TextureAutoCropper
                 TexturesPostprocessors.Crop(texture, absolutePath, settings);
                 DestroyImmediate(texture);
             }
-            
+
             if (recursively)
             {
                 var directories = Directory.GetDirectories(directory);

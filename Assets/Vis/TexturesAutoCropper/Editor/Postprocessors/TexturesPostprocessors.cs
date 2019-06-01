@@ -27,7 +27,7 @@ namespace Vis.TextureAutoCropper
             }
             
             var absolutePath = GetAbsolutePathByRelative(assetPath);
-            if (!Path.HasExtension(absolutePath) || Path.GetExtension(absolutePath) != ".png")
+            if (!Path.HasExtension(absolutePath) || !ExtensionFits(absolutePath, FileFormat.Png))
                 return;
 
             //Debug.Log($"absolutePath = {absolutePath}");
@@ -118,20 +118,64 @@ namespace Vis.TextureAutoCropper
             var croppedTexture = new Texture2D(width, heigth, TextureFormat.ARGB32, false, false);
             croppedTexture.SetPixels(pixels);
             croppedTexture.Apply();
-            var bytes = croppedTexture.EncodeToPNG();
+            var bytes = default(byte[]);
+            var extension = default(string);
+            var encodeToSpecific = settings.EncodeTo;
+            //Debug.Log($"settings.EncodeTo = {settings.EncodeTo}");
+            if (encodeToSpecific == FileFormat.All)
+            {
+                var ext = Path.GetExtension(saveToAbsolutePath).ToLower();
+                if (ext == ".png")
+                    encodeToSpecific = FileFormat.Png;
+                else if (ext == ".tga")
+                    encodeToSpecific = FileFormat.Tga;
+                //else if (ext == ".exr")
+                //    encodeToSpecific = FileFormat.Exr;
+                else
+                    Debug.LogError($"Unknown image extension: {ext}");
+            }
+            switch (encodeToSpecific)
+            {
+                case FileFormat.Png:
+                    bytes = croppedTexture.EncodeToPNG();
+                    extension = ".png";
+                    break;
+                case FileFormat.Tga:
+                    bytes = croppedTexture.EncodeToTGA();
+                    extension = ".tga";
+                    break;
+                //case FileFormat.Exr:
+                //    bytes = croppedTexture.EncodeToEXR();
+                //    extension = ".exr";
+                //    break;
+                case FileFormat.All:
+                    break;
+                default:
+                    Debug.LogError($"Unknown image encoding option: {settings.EncodeTo}");
+                    break;
+            }
+            //Debug.Log($"extension = {extension}");
+            var fileName = Path.GetFileNameWithoutExtension(saveToAbsolutePath);
+            var originalExtension = Path.GetExtension(saveToAbsolutePath);
             if (!settings.RewriteOriginal)
             {
-                var fileName = Path.GetFileNameWithoutExtension(saveToAbsolutePath);
-                var extension = Path.GetExtension(saveToAbsolutePath);
+                //Debug.Log($"originalExtension = {originalExtension}");
 
                 var similarNamesCounter = 0;
-                var originalAaveToAbsolutePath = saveToAbsolutePath;
+                var originalSaveToAbsolutePath = saveToAbsolutePath;
+                //Debug.Log($"saveToAbsolutePath = {saveToAbsolutePath}");
                 while (File.Exists(saveToAbsolutePath))
                 {
-                    var newAbsolutePath = Path.Combine(originalAaveToAbsolutePath.Substring(0, originalAaveToAbsolutePath.Length - fileName.Length - extension.Length), $"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
+                    var newAbsolutePath = Path.Combine(originalSaveToAbsolutePath.Substring(0, originalSaveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
+                    //Debug.Log($"newAbsolutePath = {newAbsolutePath}");
                     saveToAbsolutePath = newAbsolutePath;
                     similarNamesCounter++;
                 }
+            }
+            else
+            {
+                //If extension is rifferent we stil need to change name and therefore save original file. If extension the same, names will coincide and we'll rewrite.
+                saveToAbsolutePath = Path.Combine(saveToAbsolutePath.Substring(0, saveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{extension}");
             }
             File.WriteAllBytes(saveToAbsolutePath, bytes);
             Object.DestroyImmediate(croppedTexture);
@@ -152,6 +196,24 @@ namespace Vis.TextureAutoCropper
         {
             var applicationPath = Application.dataPath;
             return absolutePath.Substring(applicationPath.Length - _assetsFolderName.Length);
+        }
+
+        internal static bool ExtensionFits(string path, FileFormat ff)
+        {
+            var ext = Path.GetExtension(path).ToLower();
+            switch (ff)
+            {
+                case FileFormat.All:
+                    return ext == ".png" || ext == ".tga"/* || ext == ".exr"*/;
+                case FileFormat.Png:
+                    return ext == ".png";
+                case FileFormat.Tga:
+                    return ext == ".tga";
+                //case FileFormat.Exr:
+                //    return ext == ".exr";
+                default:
+                    return false;
+            }
         }
     }
 }
