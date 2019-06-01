@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +16,8 @@ namespace Vis.TextureAutoCropper
         }
 
         private Texture2D _manualCroppedTexture;
+        private DefaultAsset _manualCroppedFolder;
+        private bool _cropFolderRecursively;
 
         private void OnGUI()
         {
@@ -109,10 +113,55 @@ namespace Vis.TextureAutoCropper
                 DestroyImmediate(texture);
             }
 
+            _manualCroppedFolder = (DefaultAsset)EditorGUILayout.ObjectField(new GUIContent("Folder with textures: ", "Crop all textures inside that folder"), _manualCroppedFolder, typeof(DefaultAsset), false);
+            if (_manualCroppedTexture != null)
+            {
+                if (!AssetDatabase.IsForeignAsset(_manualCroppedTexture))
+                    _manualCroppedTexture = null;
+            }
+            if (_manualCroppedFolder != null)
+            {
+                _cropFolderRecursively = EditorGUILayout.Toggle(new GUIContent("Crop recursively", "Crop textures from all subfolders of that folder?"), _cropFolderRecursively);
+
+                if (GUILayout.Button("Crop"))
+                {
+                    var relativePath = AssetDatabase.GetAssetPath(_manualCroppedFolder);
+                    var absolutePath = TexturesPostprocessors.GetAbsolutePathByRelative(relativePath);
+                    cropDirectory(absolutePath, _cropFolderRecursively, settings);
+                }
+            }
+            
+
 
             EditorGUI.indentLevel--;
 
             //GUI.skin = originalSkin;
+        }
+
+        private void cropDirectory(string directory, bool recursively, Settings settings)
+        {
+            var allImages = Directory.GetFiles(directory).Where(p => Path.HasExtension(p) && Path.GetExtension(p) == ".png").ToArray();
+
+            for (int i = 0; i < allImages.Length; i++)
+            {
+                var absolutePath = allImages[i];
+                var relativePath = TexturesPostprocessors.GetRelativePathByAbsolute(absolutePath);
+                if (!TexturesPostprocessors.CropedPaths.Contains(relativePath))
+                    TexturesPostprocessors.CropedPaths.Add(relativePath);
+                var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
+                var bytes = File.ReadAllBytes(absolutePath);
+                texture.LoadImage(bytes);
+                //Debug.Log($"manual texture resolution = {texture.width}x{texture.height}");
+                TexturesPostprocessors.Crop(texture, absolutePath, settings);
+                DestroyImmediate(texture);
+            }
+            
+            if (recursively)
+            {
+                var directories = Directory.GetDirectories(directory);
+                for (int i = 0; i < directories.Length; i++)
+                    cropDirectory(directories[i], recursively, settings);
+            }
         }
 
         private bool setReadable(string relativePath, bool value = true)

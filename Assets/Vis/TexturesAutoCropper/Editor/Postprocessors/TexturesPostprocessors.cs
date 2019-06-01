@@ -111,8 +111,8 @@ namespace Vis.TextureAutoCropper
 
             var width = right - left;
             var heigth = bottom - top;
-            Debug.Log($"settings.Padding = {settings.Padding}");
-            Debug.Log($"width = {width}, height = {heigth}");
+            //Debug.Log($"settings.Padding = {settings.Padding}");
+            //Debug.Log($"width = {width}, height = {heigth}");
             var pixels = texture.GetPixels(left, top, width, heigth);
 
             var croppedTexture = new Texture2D(width, heigth, TextureFormat.ARGB32, false, false);
