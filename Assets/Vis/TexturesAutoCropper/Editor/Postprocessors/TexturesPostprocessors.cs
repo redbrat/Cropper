@@ -2,102 +2,134 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
-public class TexturesPostprocessors : AssetPostprocessor
+namespace Vis.TextureAutoCropper
 {
-    private const string _assetsFolderName = "Assets";
-
-    private static List<string> _cropedPaths = new List<string>();
-
-    private void OnPreprocessTexture()
+    internal class TexturesPostprocessors : AssetPostprocessor
     {
-        if (_cropedPaths.Contains(assetPath))
+        internal const string AssetsFolderName = "Assets";
+
+        internal static List<string> CropedPaths = new List<string>();
+
+        private void OnPreprocessTexture()
         {
-            _cropedPaths.Remove(assetPath);
-            return;
+            var settings = Settings.FindInstance();
+            if (settings == null)
+                return;
+            if (!settings.CropAutomatically)
+                return;
+
+            if (CropedPaths.Contains(assetPath))
+            {
+                //_cropedPaths.Remove(assetPath);
+                return;
+            }
+
+            var applicationPath = Application.dataPath;
+            var absolutePath = Path.Combine(applicationPath.Substring(0, applicationPath.Length - AssetsFolderName.Length), assetPath);
+            if (!Path.HasExtension(absolutePath) || Path.GetExtension(absolutePath) != ".png")
+                return;
+
+            //Debug.Log($"absolutePath = {absolutePath}");
+            var bytes = File.ReadAllBytes(absolutePath);
+            var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
+            texture.LoadImage(bytes);
+
+            Crop(texture, absolutePath, settings);
+            Object.DestroyImmediate(texture);
         }
-        _cropedPaths.Add(assetPath);
 
-        var applicationPath = Application.dataPath;
-        var absolutePath = Path.Combine(applicationPath.Substring(0, applicationPath.Length - _assetsFolderName.Length), assetPath);
-        if (!Path.HasExtension(absolutePath) || Path.GetExtension(absolutePath) != ".png")
-            return;
-
-        Debug.Log($"absolutePath = {absolutePath}");
-        var bytes = File.ReadAllBytes(absolutePath);
-        var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
-        texture.LoadImage(bytes);
-
-        var top = 0;
-        var bottom = 0;
-        var left = 0;
-        var right = 0;
-
-        for (int y = 0; y < texture.height; y++)
+        internal static void Crop(Texture2D texture, string saveToAbsolutePath, Settings settings)
         {
-            top = y;
+            var top = 0;
+            var bottom = 0;
+            var left = 0;
+            var right = 0;
+
+            for (int y = 0; y < texture.height; y++)
+            {
+                top = y;
+                for (int x = 0; x < texture.width; x++)
+                {
+                    var pixel = texture.GetPixel(x, y);
+                    if (pixel.a > 0f)
+                        goto checkLeft;
+                }
+            }
+
+        checkLeft:
+
             for (int x = 0; x < texture.width; x++)
             {
-                var pixel = texture.GetPixel(x, y);
-                if (pixel.a > 0f)
-                    goto checkLeft;
+                left = x;
+                for (int y = top; y < texture.height; y++)
+                {
+                    var pixel = texture.GetPixel(x, y);
+                    if (pixel.a > 0f)
+                        goto checkBottom;
+                }
             }
-        }
 
-    checkLeft:
+        checkBottom:
 
-        for (int x = 0; x < texture.width; x++)
-        {
-            left = x;
-            for (int y = top; y < texture.height; y++)
+            for (int y = texture.height - 1; y > top; y--)
             {
-                var pixel = texture.GetPixel(x, y);
-                if (pixel.a > 0f)
-                    goto checkBottom;
+                bottom = y;
+                for (int x = left; x < texture.width; x++)
+                {
+                    var pixel = texture.GetPixel(x, y);
+                    if (pixel.a > 0f)
+                        goto checkRight;
+                }
             }
-        }
 
-    checkBottom:
+        checkRight:
 
-        for (int y = texture.height - 1; y > top; y--)
-        {
-            bottom = y;
-            for (int x = left; x < texture.width; x++)
+            for (int x = texture.width - 1; x > left; x--)
             {
-                var pixel = texture.GetPixel(x, y);
-                if (pixel.a > 0f)
-                    goto checkRight;
+                right = x;
+                for (int y = top; y < bottom; y++)
+                {
+                    var pixel = texture.GetPixel(x, y);
+                    if (pixel.a > 0f)
+                        goto crop;
+                }
             }
-        }
 
-    checkRight:
+        crop:
 
-        for (int x = texture.width - 1; x > left; x--)
-        {
-            right = x;
-            for (int y = top; y < bottom; y++)
+            var width = right - left;
+            var heigth = bottom - top;
+            var pixels = texture.GetPixels(left, top, width, heigth);
+
+            var croppedTexture = new Texture2D(width, heigth, TextureFormat.ARGB32, false, false);
+            croppedTexture.SetPixels(pixels);
+            croppedTexture.Apply();
+            var bytes = croppedTexture.EncodeToPNG();
+            if (!settings.RewriteOriginal)
             {
-                var pixel = texture.GetPixel(x, y);
-                if (pixel.a > 0f)
-                    goto crop;
+                var fileName = Path.GetFileNameWithoutExtension(saveToAbsolutePath);
+                var extension = Path.GetExtension(saveToAbsolutePath);
+
+                var similarNamesCounter = 0;
+                var originalAaveToAbsolutePath = saveToAbsolutePath;
+                while (File.Exists(saveToAbsolutePath))
+                {
+                    var newAbsolutePath = Path.Combine(originalAaveToAbsolutePath.Substring(0, originalAaveToAbsolutePath.Length - fileName.Length - extension.Length), $"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
+                    saveToAbsolutePath = newAbsolutePath;
+                    similarNamesCounter++;
+                }
             }
+            File.WriteAllBytes(saveToAbsolutePath, bytes);
+            Object.DestroyImmediate(croppedTexture);
+
+            var applicationPath = Application.dataPath;
+            var relativePath = saveToAbsolutePath.Substring(applicationPath.Length - AssetsFolderName.Length);
+
+            if (!CropedPaths.Contains(relativePath))
+                CropedPaths.Add(relativePath);
+            AssetDatabase.ImportAsset(relativePath);
         }
-
-    crop:
-
-        var width = right - left;
-        var heigth = bottom - top;
-        var pixels = texture.GetPixels(left, top, width, heigth);
-        Object.DestroyImmediate(texture);
-
-        var croppedTexture = new Texture2D(width, heigth, TextureFormat.ARGB32, false, false);
-        croppedTexture.SetPixels(pixels);
-        croppedTexture.Apply();
-        bytes = croppedTexture.EncodeToPNG();
-        File.WriteAllBytes(absolutePath, bytes);
-        //File.WriteAllBytes(absolutePath.Substring(0, absolutePath.Length - ".png".Length) + "-cropped.png", bytes);
-        Object.DestroyImmediate(croppedTexture);
-
-        AssetDatabase.ImportAsset(assetPath);
     }
 }
