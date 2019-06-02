@@ -8,11 +8,11 @@ namespace Vis.TextureAutoCropper
 {
     public class TextureAutoCropperWindow : EditorWindow
     {
-        [MenuItem("Vis/Texture Auto Cropper")]
+        [MenuItem("Vis/Auto Image Cropper")]
         private static void ShowWindow()
         {
             var instance = GetWindow<TextureAutoCropperWindow>();
-            instance.titleContent = new GUIContent("Texture Auto Cropper");
+            instance.titleContent = new GUIContent("Auto Image Cropper");
         }
 
         private Texture2D _manualCroppedTexture;
