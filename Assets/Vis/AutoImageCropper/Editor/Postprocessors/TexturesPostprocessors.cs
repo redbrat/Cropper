@@ -4,13 +4,38 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Vis.TextureAutoCropper
+namespace Vis.AutoImageCropper
 {
     public class TexturesPostprocessors : AssetPostprocessor
     {
         private const string _assetsFolderName = "Assets";
 
-        internal static List<string> CropedPaths = new List<string>();
+        private static List<string> IgnoredIds = new List<string>();
+
+        internal static void IgnoreNextTime(string relativePath)
+        {
+            var guid = getId(relativePath);
+            if (!IgnoredIds.Contains(guid))
+                IgnoredIds.Add(guid);
+        }
+
+        internal static bool IsIgnored(string relativePath)
+        {
+            var guid = getId(relativePath);
+            return IgnoredIds.Contains(guid);
+        }
+
+        internal static void UnignoreNextTime(string relativePath)
+        {
+            var guid = getId(relativePath);
+            if (IgnoredIds.Contains(guid))
+                IgnoredIds.Remove(guid);
+        }
+
+        private static string getId(string relativePath)
+        {
+            return $"{AssetDatabase.AssetPathToGUID(relativePath)}";
+        }
 
         private void OnPreprocessTexture()
         {
@@ -20,30 +45,29 @@ namespace Vis.TextureAutoCropper
             if (!settings.CropAutomatically)
                 return;
 
-            if (CropedPaths.Contains(assetPath))
+            if (IsIgnored(assetPath))
             {
                 //_cropedPaths.Remove(assetPath);
                 return;
             }
-            
+
             var absolutePath = GetAbsolutePathByRelative(assetPath);
             if (!Path.HasExtension(absolutePath) || !ExtensionFits(absolutePath, FileFormat.Png))
                 return;
 
-            //Debug.Log($"absolutePath = {absolutePath}");
             var bytes = File.ReadAllBytes(absolutePath);
             var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
             texture.LoadImage(bytes);
 
-            //Debug.Log($"auto texture resolution = {texture.width}x{texture.height}");
             Crop(texture, absolutePath, settings);
             Object.DestroyImmediate(texture);
-            //var importer = (TextureImporter)assetImporter;
-            //importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings() { maxTextureSize = 2048 });
         }
 
         internal static void Crop(Texture2D texture, string saveToAbsolutePath, Settings settings)
         {
+            var relativePath = GetRelativePathByAbsolute(saveToAbsolutePath);
+            IgnoreNextTime(relativePath);
+
             var top = 0;
             var bottom = 0;
             var left = 0;
@@ -113,8 +137,6 @@ namespace Vis.TextureAutoCropper
 
             var width = right - left;
             var heigth = bottom - top;
-            //Debug.Log($"settings.Padding = {settings.Padding}");
-            //Debug.Log($"width = {width}, height = {heigth}");
             var pixels = texture.GetPixels(left, top, width, heigth);
 
             var croppedTexture = new Texture2D(width, heigth, TextureFormat.ARGB32, false, false);
@@ -123,7 +145,6 @@ namespace Vis.TextureAutoCropper
             var bytes = default(byte[]);
             var extension = default(string);
             var encodeToSpecific = settings.EncodeTo;
-            //Debug.Log($"settings.EncodeTo = {settings.EncodeTo}");
             if (encodeToSpecific == FileFormat.All)
             {
                 var ext = Path.GetExtension(saveToAbsolutePath).ToLower();
@@ -156,35 +177,29 @@ namespace Vis.TextureAutoCropper
                     Debug.LogError($"Unknown image encoding option: {settings.EncodeTo}");
                     break;
             }
-            //Debug.Log($"extension = {extension}");
             var fileName = Path.GetFileNameWithoutExtension(saveToAbsolutePath);
             var originalExtension = Path.GetExtension(saveToAbsolutePath);
             if (!settings.RewriteOriginal)
             {
-                //Debug.Log($"originalExtension = {originalExtension}");
-
                 var similarNamesCounter = 0;
                 var originalSaveToAbsolutePath = saveToAbsolutePath;
-                //Debug.Log($"saveToAbsolutePath = {saveToAbsolutePath}");
                 while (File.Exists(saveToAbsolutePath))
                 {
                     var newAbsolutePath = Path.Combine(originalSaveToAbsolutePath.Substring(0, originalSaveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
-                    //Debug.Log($"newAbsolutePath = {newAbsolutePath}");
                     saveToAbsolutePath = newAbsolutePath;
                     similarNamesCounter++;
                 }
             }
             else
             {
-                //If extension is rifferent we stil need to change name and therefore save original file. If extension the same, names will coincide and we'll rewrite.
+                //If extension is different we stil need to change name and therefore save original file. If extension the same, names will coincide and we'll rewrite.
                 saveToAbsolutePath = Path.Combine(saveToAbsolutePath.Substring(0, saveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{extension}");
             }
             File.WriteAllBytes(saveToAbsolutePath, bytes);
             Object.DestroyImmediate(croppedTexture);
 
-            var relativePath = GetRelativePathByAbsolute(saveToAbsolutePath);
-            if (!CropedPaths.Contains(relativePath))
-                CropedPaths.Add(relativePath);
+            relativePath = GetRelativePathByAbsolute(saveToAbsolutePath);
+            IgnoreNextTime(relativePath);
             AssetDatabase.ImportAsset(relativePath);
         }
 
@@ -216,6 +231,13 @@ namespace Vis.TextureAutoCropper
                 default:
                     return false;
             }
+        }
+
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            for (int i = 0; i < deletedAssets.Length; i++)
+                if (ExtensionFits(deletedAssets[i], FileFormat.All))
+                    UnignoreNextTime(deletedAssets[i]);
         }
     }
 }

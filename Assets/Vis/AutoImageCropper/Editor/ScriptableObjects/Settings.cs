@@ -1,12 +1,12 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace Vis.TextureAutoCropper
+namespace Vis.AutoImageCropper
 {
     public class Settings : ScriptableObject
     {
-        private const string _pointerToDbName = "TexturesAutoCropperDBFolderPointer";
-        private const string _settingsFileName = "TexturesAutoCropperSettings.asset";
+        private const string _pointerToDbName = "AutoImageCropperDBFolderPointer";
+        private const string _settingsFileName = "AutoImageCropperSettings.asset";
 
         private static Settings _settingsCache;
         internal static Settings FindInstance()
@@ -17,7 +17,7 @@ namespace Vis.TextureAutoCropper
             var pointerToDbFolderGuids = AssetDatabase.FindAssets(_pointerToDbName);
             if (pointerToDbFolderGuids.Length == 0)
             {
-                Debug.LogError($"TextureAutoCropper installation is corrupted. Please reimport asset from asset store!");
+                Debug.LogError($"AutoImageCropper installation is corrupted. Please reimport asset from asset store!");
                 return null;
             }
             var pointerToDbFolderPath = AssetDatabase.GUIDToAssetPath(pointerToDbFolderGuids[0]);

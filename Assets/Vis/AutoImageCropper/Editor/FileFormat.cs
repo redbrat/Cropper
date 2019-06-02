@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Vis.TextureAutoCropper
+namespace Vis.AutoImageCropper
 {
     [Flags, Serializable]
     public enum FileFormat : int

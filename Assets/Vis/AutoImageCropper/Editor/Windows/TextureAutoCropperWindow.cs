@@ -1,17 +1,16 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Vis.TextureAutoCropper
+namespace Vis.AutoImageCropper
 {
-    public class TextureAutoCropperWindow : EditorWindow
+    public class AutoImageCropperWindow : EditorWindow
     {
         [MenuItem("Vis/Auto Image Cropper")]
         private static void ShowWindow()
         {
-            var instance = GetWindow<TextureAutoCropperWindow>();
+            var instance = GetWindow<AutoImageCropperWindow>();
             instance.titleContent = new GUIContent("Auto Image Cropper");
         }
 
@@ -25,7 +24,7 @@ namespace Vis.TextureAutoCropper
             var settings = Settings.FindInstance();
             if (settings == null)
             {
-                EditorGUILayout.HelpBox($"TextureAutoCropper installation is corrupted. Please reimport asset from asset store!", MessageType.Error);
+                EditorGUILayout.HelpBox($"AutoImageCropper installation is corrupted. Please reimport asset from asset store!", MessageType.Error);
                 return;
             }
 
@@ -44,28 +43,16 @@ namespace Vis.TextureAutoCropper
             var newAutoCrop = EditorGUILayout.Toggle(new GUIContent("Crop automatically", "Crop all imported textures automatically?"), settings.CropAutomatically);
             if (newAutoCrop != settings.CropAutomatically)
             {
-                Undo.RecordObject(settings, "TextureAutoCropper - Crop automatically option changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Crop automatically option changed");
                 settings.CropAutomatically = newAutoCrop;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
 
-            //if (newAutoCrop)
-            //{
-            //    var newFormatFilter = (FileFormat)EditorGUILayout.EnumPopup(new GUIContent("Applied file format", "Which file formats must be cropped automatically?"), settings.FormatFilter);
-            //    if (newFormatFilter != settings.FormatFilter)
-            //    {
-            //        Undo.RecordObject(settings, "TextureAutoCropper - Applied formats changed");
-            //        settings.FormatFilter = newFormatFilter;
-            //        EditorUtility.SetDirty(settings);
-            //        AssetDatabase.SaveAssets();
-            //    }
-            //}
-
             var newRewriteOriginal = EditorGUILayout.Toggle("Rewrite original file", settings.RewriteOriginal);
             if (newRewriteOriginal != settings.RewriteOriginal)
             {
-                Undo.RecordObject(settings, "TextureAutoCropper - Rewrite original option changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Rewrite original option changed");
                 settings.RewriteOriginal = newRewriteOriginal;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
@@ -78,7 +65,7 @@ namespace Vis.TextureAutoCropper
                 var newCroppedFileNamingSchema = EditorGUILayout.TextField("Cropped file naming schema:", settings.CroppedFileNamingSchema);
                 if (newCroppedFileNamingSchema != settings.CroppedFileNamingSchema)
                 {
-                    Undo.RecordObject(settings, "TextureAutoCropper - Cropped file naming schema changed");
+                    Undo.RecordObject(settings, "AutoImageCropper - Cropped file naming schema changed");
                     settings.CroppedFileNamingSchema = newCroppedFileNamingSchema;
                     EditorUtility.SetDirty(settings);
                     AssetDatabase.SaveAssets();
@@ -91,7 +78,7 @@ namespace Vis.TextureAutoCropper
             var newAlphaThreshold = EditorGUILayout.Slider(new GUIContent("Alpha Threshold", "Alpha value less or equal than this will be considered transparent and ready for crop."), settings.AlphaThreshold, 0f, 1f);
             if (newAlphaThreshold != settings.AlphaThreshold)
             {
-                Undo.RecordObject(settings, "TextureAutoCropper - Alpha Threshold changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Alpha Threshold changed");
                 settings.AlphaThreshold = newAlphaThreshold;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
@@ -105,7 +92,7 @@ namespace Vis.TextureAutoCropper
                 newPaddingRect.x = newTopLeftPadding.x;
                 newPaddingRect.y = newTopLeftPadding.y;
 
-                Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Cropping padding changed");
                 settings.Padding = newPaddingRect;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
@@ -118,24 +105,16 @@ namespace Vis.TextureAutoCropper
                 newPaddingRect.width = newBottomRightPadding.x;
                 newPaddingRect.height = newBottomRightPadding.y;
 
-                Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Cropping padding changed");
                 settings.Padding = newPaddingRect;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
-            //var newPadding = EditorGUILayout.RectIntField(new GUIContent("Padding:", "How much space should be left uncropped from each side?"), settings.Padding);
-            //if (!newPadding.Equals(settings.Padding))
-            //{
-            //    Undo.RecordObject(settings, "TextureAutoCropper - Cropping padding changed");
-            //    settings.Padding = newPadding;
-            //    EditorUtility.SetDirty(settings);
-            //    AssetDatabase.SaveAssets();
-            //}
 
             var encodeTo = (FileFormat)EditorGUILayout.EnumPopup(new GUIContent("Encode cropped to", "You may choose for cropped images in wich format to encode. \"All\" means to keep original format."), settings.EncodeTo);
             if (encodeTo != settings.EncodeTo)
             {
-                Undo.RecordObject(settings, "TextureAutoCropper - Encode format changed");
+                Undo.RecordObject(settings, "AutoImageCropper - Encode format changed");
                 settings.EncodeTo = encodeTo;
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
@@ -172,8 +151,7 @@ namespace Vis.TextureAutoCropper
                 var relativePath = AssetDatabase.GetAssetPath(_manualCroppedTexture);
                 var absolutePath = TexturesPostprocessors.GetAbsolutePathByRelative(relativePath);
 
-                if (!TexturesPostprocessors.CropedPaths.Contains(relativePath))
-                    TexturesPostprocessors.CropedPaths.Add(relativePath);
+                TexturesPostprocessors.IgnoreNextTime(relativePath);
                 var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
                 var bytes = File.ReadAllBytes(absolutePath);
                 texture.LoadImage(bytes);
@@ -218,12 +196,10 @@ namespace Vis.TextureAutoCropper
             {
                 var absolutePath = allImages[i];
                 var relativePath = TexturesPostprocessors.GetRelativePathByAbsolute(absolutePath);
-                if (!TexturesPostprocessors.CropedPaths.Contains(relativePath))
-                    TexturesPostprocessors.CropedPaths.Add(relativePath);
+                TexturesPostprocessors.IgnoreNextTime(relativePath);
                 var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false, false);
                 var bytes = File.ReadAllBytes(absolutePath);
                 texture.LoadImage(bytes);
-                //Debug.Log($"manual texture resolution = {texture.width}x{texture.height}");
                 TexturesPostprocessors.Crop(texture, absolutePath, settings);
                 DestroyImmediate(texture);
             }
@@ -250,7 +226,7 @@ namespace Vis.TextureAutoCropper
             }
             else
             {
-                Debug.LogError($"TextureAutoCropper - can't locate texture imported for asset {relativePath}!");
+                Debug.LogError($"AutoImageCropper - can't locate texture imported for asset {relativePath}!");
                 return false;
             }
         }
