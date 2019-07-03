@@ -15,6 +15,7 @@ namespace Vis.AutoImageCropper
         internal static void IgnoreNextTime(string relativePath)
         {
             var guid = getId(relativePath);
+            //Debug.LogWarning($"Now ignoring: {relativePath} {guid}");
             if (!IgnoredIds.Contains(guid))
                 IgnoredIds.Add(guid);
         }
@@ -22,19 +23,25 @@ namespace Vis.AutoImageCropper
         internal static bool IsIgnored(string relativePath)
         {
             var guid = getId(relativePath);
-            return IgnoredIds.Contains(guid);
+            var answer = IgnoredIds.Contains(guid) || IgnoredIds.Contains(relativePath);
+            //Debug.LogWarning($"Asking if ignored: {relativePath} {guid}. Answering: {answer}");
+            return answer;
         }
 
         internal static void UnignoreNextTime(string relativePath)
         {
             var guid = getId(relativePath);
+            //Debug.LogWarning($"Unignored: {relativePath} {guid}");
             if (IgnoredIds.Contains(guid))
                 IgnoredIds.Remove(guid);
         }
 
         private static string getId(string relativePath)
         {
-            return $"{AssetDatabase.AssetPathToGUID(relativePath)}";
+            var result = AssetDatabase.AssetPathToGUID(relativePath);
+            if (string.IsNullOrEmpty(result))
+                result = relativePath;
+            return $"{result}";
         }
 
         private void OnPreprocessTexture()
@@ -50,6 +57,7 @@ namespace Vis.AutoImageCropper
                 //_cropedPaths.Remove(assetPath);
                 return;
             }
+            IgnoreNextTime(assetPath);
 
             var absolutePath = GetAbsolutePathByRelative(assetPath);
             if (!Path.HasExtension(absolutePath) || !ExtensionFits(absolutePath, FileFormat.Png))
@@ -150,8 +158,10 @@ namespace Vis.AutoImageCropper
                 var ext = Path.GetExtension(saveToAbsolutePath).ToLower();
                 if (ext == ".png")
                     encodeToSpecific = FileFormat.Png;
+#if !UNITY_2017 && !UNITY_5
                 else if (ext == ".tga")
                     encodeToSpecific = FileFormat.Tga;
+#endif
                 //else if (ext == ".exr")
                 //    encodeToSpecific = FileFormat.Exr;
                 else
@@ -163,10 +173,12 @@ namespace Vis.AutoImageCropper
                     bytes = croppedTexture.EncodeToPNG();
                     extension = ".png";
                     break;
+#if !UNITY_2017 && !UNITY_5
                 case FileFormat.Tga:
                     bytes = croppedTexture.EncodeToTGA();
                     extension = ".tga";
                     break;
+#endif
                 //case FileFormat.Exr:
                 //    bytes = croppedTexture.EncodeToEXR();
                 //    extension = ".exr";
@@ -224,8 +236,10 @@ namespace Vis.AutoImageCropper
                     return ext == ".png" || ext == ".tga"/* || ext == ".exr"*/;
                 case FileFormat.Png:
                     return ext == ".png";
+#if !UNITY_2017 && !UNITY_5
                 case FileFormat.Tga:
                     return ext == ".tga";
+#endif
                 //case FileFormat.Exr:
                 //    return ext == ".exr";
                 default:
