@@ -11,7 +11,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 626ab18b01c51bb45a205233a239d19f, type: 3}
   m_Name: AutoImageCropperSettings
   m_EditorClassIdentifier: 
-  CropAutomatically: 0
+  CropAutomatically: 1
   RewriteOriginal: 0
   CroppedFileNamingSchema: -cropped
   AlphaThreshold: 0

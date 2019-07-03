@@ -41,7 +41,7 @@ namespace Vis.AutoImageCropper
             var result = AssetDatabase.AssetPathToGUID(relativePath);
             if (string.IsNullOrEmpty(result))
                 result = relativePath;
-            return $"{result}";
+            return result;
         }
 
         private void OnPreprocessTexture()
@@ -165,7 +165,7 @@ namespace Vis.AutoImageCropper
                 //else if (ext == ".exr")
                 //    encodeToSpecific = FileFormat.Exr;
                 else
-                    Debug.LogError($"Unknown image extension: {ext}");
+                    Debug.LogError(string.Format("Unknown image extension: {0}", ext));
             }
             switch (encodeToSpecific)
             {
@@ -186,7 +186,7 @@ namespace Vis.AutoImageCropper
                 case FileFormat.All:
                     break;
                 default:
-                    Debug.LogError($"Unknown image encoding option: {settings.EncodeTo}");
+                    Debug.LogError(string.Format("Unknown image encoding option: {0}", settings.EncodeTo));
                     break;
             }
             var fileName = Path.GetFileNameWithoutExtension(saveToAbsolutePath);
@@ -197,7 +197,8 @@ namespace Vis.AutoImageCropper
                 var originalSaveToAbsolutePath = saveToAbsolutePath;
                 while (File.Exists(saveToAbsolutePath))
                 {
-                    var newAbsolutePath = Path.Combine(originalSaveToAbsolutePath.Substring(0, originalSaveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
+                    var newAbsolutePath = Path.Combine(originalSaveToAbsolutePath.Substring(0, originalSaveToAbsolutePath.Length - fileName.Length - originalExtension.Length), string.Format("{0}{1}{2}{3}", fileName, settings.CroppedFileNamingSchema, (similarNamesCounter > 0 ? string.Format(" {0}", similarNamesCounter) : string.Empty), extension));
+                    //$"{fileName}{settings.CroppedFileNamingSchema}{(similarNamesCounter > 0 ? $" {similarNamesCounter}" : string.Empty)}{extension}");
                     saveToAbsolutePath = newAbsolutePath;
                     similarNamesCounter++;
                 }
@@ -205,7 +206,7 @@ namespace Vis.AutoImageCropper
             else
             {
                 //If extension is different we stil need to change name and therefore save original file. If extension the same, names will coincide and we'll rewrite.
-                saveToAbsolutePath = Path.Combine(saveToAbsolutePath.Substring(0, saveToAbsolutePath.Length - fileName.Length - originalExtension.Length), $"{fileName}{extension}");
+                saveToAbsolutePath = Path.Combine(saveToAbsolutePath.Substring(0, saveToAbsolutePath.Length - fileName.Length - originalExtension.Length), string.Format("{0}{1}", fileName, extension));
             }
             File.WriteAllBytes(saveToAbsolutePath, bytes);
             Object.DestroyImmediate(croppedTexture);

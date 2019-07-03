@@ -24,7 +24,7 @@ namespace Vis.AutoImageCropper
             var settings = Settings.FindInstance();
             if (settings == null)
             {
-                EditorGUILayout.HelpBox($"AutoImageCropper installation is corrupted. Please reimport asset from asset store!", MessageType.Error);
+                EditorGUILayout.HelpBox("AutoImageCropper installation is corrupted. Please reimport asset from asset store!", MessageType.Error);
                 return;
             }
 
@@ -59,7 +59,7 @@ namespace Vis.AutoImageCropper
             }
 
             if (newRewriteOriginal)
-                EditorGUILayout.HelpBox($"Cropped file will replace original imported file", MessageType.Warning);
+                EditorGUILayout.HelpBox("Cropped file will replace original imported file", MessageType.Warning);
             else
             {
                 var newCroppedFileNamingSchema = EditorGUILayout.TextField("Cropped file naming schema:", settings.CroppedFileNamingSchema);
@@ -145,7 +145,7 @@ namespace Vis.AutoImageCropper
                     _showWrongFileFormatError = false;
             }
             if (_showWrongFileFormatError)
-                EditorGUILayout.HelpBox($"Currently only .PNG file format supported for cropping.", MessageType.Error);
+                EditorGUILayout.HelpBox("Currently only .PNG file format supported for cropping.", MessageType.Error);
             if (_manualCroppedTexture != null && GUILayout.Button("Crop"))
             {
                 var relativePath = AssetDatabase.GetAssetPath(_manualCroppedTexture);
@@ -226,7 +226,7 @@ namespace Vis.AutoImageCropper
             }
             else
             {
-                Debug.LogError($"AutoImageCropper - can't locate texture imported for asset {relativePath}!");
+                Debug.LogError("AutoImageCropper - can't locate texture imported for asset {relativePath}!");
                 return false;
             }
         }

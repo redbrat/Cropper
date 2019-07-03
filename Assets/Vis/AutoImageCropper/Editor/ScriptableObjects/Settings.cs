@@ -18,7 +18,7 @@ namespace Vis.AutoImageCropper
             var pointerToDbFolderGuids = AssetDatabase.FindAssets(_pointerToDbName);
             if (pointerToDbFolderGuids.Length == 0)
             {
-                Debug.LogError($"AutoImageCropper installation is corrupted. Please reimport asset from asset store!");
+                Debug.LogError("AutoImageCropper installation is corrupted. Please reimport asset from asset store!");
                 return null;
             }
             var pointerToDbFolderPath = AssetDatabase.GUIDToAssetPath(pointerToDbFolderGuids[0]);
@@ -29,7 +29,7 @@ namespace Vis.AutoImageCropper
             var skin = AssetDatabase.LoadAssetAtPath<GUISkin>(skinPath);
             if (skin == null)
             {
-                Debug.LogError($"AutoImageCropper installation is corrupted. Please reimport asset from asset store!");
+                Debug.LogError("AutoImageCropper installation is corrupted. Please reimport asset from asset store!");
                 return null;
             }
 
